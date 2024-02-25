@@ -78,6 +78,18 @@ impl Calculator for CalculatorService {
     }
 }
 
+use tonic::metadata::MetadataValue;
+use tonic::{Request, Status};
+
+fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
+    let token: MetadataValue<_> = "Bearer some-secret-token".parse().unwrap();
+
+    match req.metadata().get("authorization") {
+        Some(t) if token == t => Ok(req),
+        _ => Err(Status::unauthenticated("unauthorized")),
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse()?;
@@ -99,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Server::builder()
         .add_service(service)
         .add_service(CalculatorServer::new(calculator))
-        .add_service(AdminServer::new(admin))
+        .add_service(AdminServer::with_interceptor(admin, check_auth))
         .serve(addr)
         .await?;
     Ok(())
