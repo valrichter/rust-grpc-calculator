@@ -25,6 +25,19 @@ impl Calculator for CalculatorService {
 
         Ok(tonic::Response::new(response))
     }
+
+    async fn divide(
+        &self,
+        request: tonic::Request<proto::CalculationRequest>,
+    ) -> Result<tonic::Response<proto::CalculationResponse>, tonic::Status> {
+        let input = request.get_ref();
+
+        let response = proto::CalculationResponse {
+            result: input.a / input.b,
+        };
+
+        Ok(tonic::Response::new(response))
+    }
 }
 
 #[tokio::main]
@@ -38,7 +51,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     Server::builder()
-        .add_service(service)
         .add_service(CalculatorServer::new(calculator))
         .serve(addr)
         .await?;
